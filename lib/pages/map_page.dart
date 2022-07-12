@@ -1,10 +1,14 @@
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:geotimer/pages/navigation_draver.dart';
+import 'package:geotimer/providers/alarm_provider.dart';
 import 'package:geotimer/services/db_service.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:provider/provider.dart';
 
 import '../models/alarm.dart';
 
@@ -21,13 +25,12 @@ class MapPage extends StatefulWidget {
 class _MapPageState extends State<MapPage> {
 
   late Alarm _alarm;
-  late double currentSliderValue;
+  late double currentFrequencyValue;
+  late double currentDistanceValue;
 
   late CircleMarker circle;
   late MapController controller  = MapController();
-  final _beam = GlobalKey<FormState>();
   final _save = GlobalKey<FormState>();
-  final TextEditingController beamController = TextEditingController();
   final TextEditingController nameController = TextEditingController();
   final TextEditingController frequencyController = TextEditingController();
 
@@ -41,13 +44,16 @@ class _MapPageState extends State<MapPage> {
       _alarm = widget.alarm!;
     }
     
-    currentSliderValue = 10;
+    currentFrequencyValue = _alarm.frequency;
+    currentDistanceValue = _alarm.r.toDouble();
 
     circle = CircleMarker(point: LatLng(_alarm.lat, _alarm.lon), radius: _alarm.r*1000, useRadiusInMeter: true, color: Colors.blue.withOpacity(0.7));
   }
 
   @override
   Widget build(BuildContext context) {
+    var alarmProvider = Provider.of<AlarmProvider>(context, listen: false);
+
     return Scaffold(
       drawer: const MyNavigationDrawer(),
       appBar: AppBar(
@@ -95,30 +101,31 @@ class _MapPageState extends State<MapPage> {
                                 children: [
                                 Expanded(
                                   flex: 1,
+                                  child: Text("${currentFrequencyValue.round()}")
+                                ),
+                                Expanded(
+                                  flex: 1,
                                   child: IconButton(onPressed: () =>{
                                     setState(() {
-                                      if(currentSliderValue > 1){
-                                        currentSliderValue--;
+                                      if(currentFrequencyValue > 1){
+                                        currentFrequencyValue--;
                                       }
                                       else{
-                                        currentSliderValue = 1;
+                                        currentFrequencyValue = 1;
                                       }
-                                      
                                     })
                                   }, 
                                   icon: const FaIcon(FontAwesomeIcons.minus))),
                                 Expanded(
                                   flex: 6,
                                   child: Slider(
-                                    value: currentSliderValue,
+                                    value: currentFrequencyValue,
                                     divisions: 240,
                                     max: 240,
                                     min: 1,
-
-                                    label: currentSliderValue.round().toString(),
                                     onChanged: (newValue) {
                                     setState(() {
-                                      currentSliderValue = newValue;
+                                      currentFrequencyValue = newValue;
                                     });
                                   }),
                                 ),
@@ -126,11 +133,11 @@ class _MapPageState extends State<MapPage> {
                                   flex: 1, 
                                   child: IconButton(onPressed: () =>{
                                     setState(() {
-                                      if(currentSliderValue < 240){
-                                        currentSliderValue++;
+                                      if(currentFrequencyValue < 240){
+                                        currentFrequencyValue++;
                                       }
                                       else{
-                                        currentSliderValue = 240;
+                                        currentFrequencyValue = 240;
                                       }
                                     })
                                   }, 
@@ -145,6 +152,7 @@ class _MapPageState extends State<MapPage> {
                     TextButton(
                       onPressed: () => {
                         Navigator.pop(context, 'Cancel'),
+                        currentFrequencyValue = _alarm.frequency.toDouble(),
                         nameController.clear(),
                       },
                       child: const Text('Cancel'),
@@ -153,8 +161,8 @@ class _MapPageState extends State<MapPage> {
                       onPressed: () async => {
                         if(_save.currentState!.validate()){
                           _alarm.city = nameController.text,
-                          _alarm.frequency = currentSliderValue,
-                          await DBService.insert(_alarm.toMap()),
+                          _alarm.frequency = currentFrequencyValue,
+                          alarmProvider.addAlarm(_alarm),
                           nameController.clear(),
                           Navigator.pop(context, 'OK'),
                           Navigator.pop(context),
@@ -197,45 +205,82 @@ class _MapPageState extends State<MapPage> {
               margin: const EdgeInsets.fromLTRB(0, 0, 30, 40),
               alignment: Alignment.bottomRight,
               child: FloatingActionButton(onPressed: (() {
-                showDialog<String>(
+                showDialog(
                 context: context,
                 builder: (BuildContext context) => AlertDialog(
                   title: const Text('Táv'),
-                  content: Form(
-                    key: _beam,
-                    child: TextFormField(
-                      keyboardType: TextInputType.number,
-                      onChanged: (value) {
-                  
-                      },
-                      controller: beamController,
-                      decoration: const InputDecoration(
-                        hintText: "Távolság az állomástól", 
+                  content: StatefulBuilder(
+                    builder: (BuildContext context, StateSetter setState) {
+                    return Container(
+                      margin: EdgeInsets.zero,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                            Container(
+                              margin: EdgeInsets.zero,
+                              child: Row(
+                                children: [
+                                Expanded(
+                                  flex: 1,
+                                  child: Text("${currentDistanceValue.round()}")
+                                ),
+                                Expanded(
+                                  flex: 1,
+                                  child: IconButton(onPressed: () =>{
+                                    setState(() {
+                                      if(currentDistanceValue > 1){
+                                        currentDistanceValue--;
+                                      }
+                                      else{
+                                        currentDistanceValue = 1;
+                                      }
+                                    })
+                                  }, 
+                                  icon: const FaIcon(FontAwesomeIcons.minus))),
+                                Expanded(
+                                  flex: 6,
+                                  child: Slider(
+                                    value: currentDistanceValue,
+                                    divisions: 50,
+                                    max: 50,
+                                    min: 1,
+                                    onChanged: (newValue) {
+                                    setState(() {
+                                      currentDistanceValue = newValue;
+                                    });
+                                  }),
+                                ),
+                                Expanded(
+                                  flex: 1, 
+                                  child: IconButton(onPressed: () =>{
+                                    setState(() {
+                                      if(currentDistanceValue < 240){
+                                        currentDistanceValue++;
+                                      }
+                                      else{
+                                        currentDistanceValue = 240;
+                                      }
+                                    })
+                                  }, 
+                                  icon: const FaIcon(FontAwesomeIcons.plus))),
+                                ]),
+                            )
+                        ],
                       ),
-
-                      validator: (text) {
-                        if (text != null && RegExp("^\\d+\$").hasMatch(text)) {
-                          return null;
-                        }
-                          return "Csak számokat tartalmazhat!";
-                      },
-                    ),
-                  ),
+                    );
+                  } ),
                   actions: <Widget>[
                     TextButton(
                       onPressed: () => {
-                        beamController.clear(),
                         Navigator.pop(context, 'Cancel'),
+                        currentDistanceValue = _alarm.r.toDouble(),
                       },
                       child: const Text('Cancel'),
                     ),
                     TextButton(
                       onPressed: () async => {
-                        if(_beam.currentState!.validate()){
-                          _alarm.r = int.parse(beamController.text),
-                          beamController.clear(),
-                          Navigator.pop(context, 'OK'),
-                        }
+                        _alarm.r = currentDistanceValue.round(),
+                        Navigator.pop(context, 'OK'),
                       },
                       child: const Text('OK'),
                     ),

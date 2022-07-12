@@ -62,17 +62,17 @@ class DBService{
    // await db.close();
   }
 
-  static Future<void> activateAlarm(Alarm alarm) async {
-    alarm.isActive = 1;
+  static Future<void> tumbleAlarm(Alarm alarm) async {
+    if(alarm.isActive == 0){
+      alarm.isActive = 1;
+    }
+    else{
+      alarm.isActive = 0;
+    }
 
     await DBService.update(alarm.toMap());
   }
 
-  static Future<void> deactivateAlarm(Alarm alarm) async {
-    alarm.isActive = 0;
-
-    await DBService.update(alarm.toMap());
-  }
 
   static Future<Alarm> queryById(int id) async {
     final db = await DBService.database();
@@ -81,6 +81,23 @@ class DBService{
 
     return Alarm.fromMap(record[0]);
   }
+
+  static Future<List<Alarm>> getByActivity(int active) async {
+    final db = await DBService.database();
+
+    var data = await db.rawQuery('SELECT * FROM alarm WHERE isActive=?', [active]);
+
+    List<Alarm> alarmList = [];
+    
+    data.forEach((element) { 
+      alarmList.add(Alarm.fromMap(element));
+    });
+
+    //await db.close();
+
+    return alarmList;
+  }
+  
 
 
 

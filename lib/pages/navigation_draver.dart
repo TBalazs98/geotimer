@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:geotimer/pages/map_page.dart';
+import 'package:geotimer/widgets/MySlider.dart';
 import 'home_page.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
@@ -37,7 +38,7 @@ class MyNavigationDrawer extends StatelessWidget {
                       size: 25,
                       color: Colors.white,
                     ),
-                    title: const Text("Home", style: TextStyle(color: Colors.white)),
+                    title: const Text("Aktív riásztások", style: TextStyle(color: Colors.white)),
                     onTap: () => navigateTo(context, 0),
                   ),
                 ),
@@ -49,8 +50,20 @@ class MyNavigationDrawer extends StatelessWidget {
                       size: 25,
                       color: Colors.white,
                     ),
-                    title: const Text("Map", style: TextStyle(color: Colors.white)),
+                    title: const Text("Új riasztás", style: TextStyle(color: Colors.white)),
                     onTap: () => navigateTo(context, 1),
+                  ),
+                ),
+                Container(
+                  margin: const EdgeInsets.fromLTRB(20, 0, 0, 0),
+                  child: ListTile(
+                    leading: const FaIcon(
+                      FontAwesomeIcons.house,
+                      size: 25,
+                      color: Colors.white,
+                    ),
+                    title: const Text("Összes risztás", style: TextStyle(color: Colors.white)),
+                    onTap: () => navigateTo(context, 2),
                   ),
                 ),
               ],
@@ -68,6 +81,10 @@ class MyNavigationDrawer extends StatelessWidget {
 
         case 1:
         Navigator.of(context).push(MaterialPageRoute(builder: (context) => MapPage(isEditable: true)));
+        break;
+
+        case 2: 
+        Navigator.of(context).push(MaterialPageRoute(builder: (context) => const HomePage()));
         break;
     }
 
